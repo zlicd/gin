@@ -33,16 +33,16 @@ type IRouter interface {
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
-	Handle(string, string, ...HandlerFunc) IRoutes
-	Any(string, ...HandlerFunc) IRoutes
-	GET(string, ...HandlerFunc) IRoutes
-	POST(string, ...HandlerFunc) IRoutes
-	DELETE(string, ...HandlerFunc) IRoutes
-	PATCH(string, ...HandlerFunc) IRoutes
-	PUT(string, ...HandlerFunc) IRoutes
-	OPTIONS(string, ...HandlerFunc) IRoutes
-	HEAD(string, ...HandlerFunc) IRoutes
-	Match([]string, string, ...HandlerFunc) IRoutes
+	Handle(string, string, string, ...HandlerFunc) IRoutes
+	Any(string, string, ...HandlerFunc) IRoutes
+	GET(string, string, ...HandlerFunc) IRoutes
+	POST(string, string, ...HandlerFunc) IRoutes
+	DELETE(string, string, ...HandlerFunc) IRoutes
+	PATCH(string, string, ...HandlerFunc) IRoutes
+	PUT(string, string, ...HandlerFunc) IRoutes
+	OPTIONS(string, string, ...HandlerFunc) IRoutes
+	HEAD(string, string, ...HandlerFunc) IRoutes
+	Match([]string, string, string, ...HandlerFunc) IRoutes
 
 	StaticFile(string, string) IRoutes
 	StaticFileFS(string, string, http.FileSystem) IRoutes
@@ -83,10 +83,10 @@ func (group *RouterGroup) BasePath() string {
 	return group.basePath
 }
 
-func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) IRoutes {
+func (group *RouterGroup) handle(httpMethod, relativePath string, handlerName string, handlers HandlersChain) IRoutes {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
-	group.engine.addRoute(httpMethod, absolutePath, handlers)
+	group.engine.addRoute(httpMethod, absolutePath, handlers, handlerName)
 	return group.returnObj()
 }
 
@@ -100,62 +100,62 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
 	if matched := regEnLetter.MatchString(httpMethod); !matched {
 		panic("http method " + httpMethod + " is not valid")
 	}
-	return group.handle(httpMethod, relativePath, handlers)
+	return group.handle(httpMethod, relativePath, handlerName, handlers)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handlers).
-func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPost, relativePath, handlers)
+func (group *RouterGroup) POST(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodPost, relativePath, handlerName, handlers)
 }
 
 // GET is a shortcut for router.Handle("GET", path, handlers).
-func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodGet, relativePath, handlers)
+func (group *RouterGroup) GET(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodGet, relativePath, handlerName, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
-func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodDelete, relativePath, handlers)
+func (group *RouterGroup) DELETE(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodDelete, relativePath, handlerName, handlers)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handlers).
-func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPatch, relativePath, handlers)
+func (group *RouterGroup) PATCH(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodPatch, relativePath, handlerName, handlers)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handlers).
-func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodPut, relativePath, handlers)
+func (group *RouterGroup) PUT(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodPut, relativePath, handlerName, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handlers).
-func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodOptions, relativePath, handlers)
+func (group *RouterGroup) OPTIONS(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodOptions, relativePath, handlerName, handlers)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handlers).
-func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodHead, relativePath, handlers)
+func (group *RouterGroup) HEAD(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodHead, relativePath, handlerName, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
+func (group *RouterGroup) Any(relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range anyMethods {
-		group.handle(method, relativePath, handlers)
+		group.handle(method, relativePath, handlerName, handlers)
 	}
 
 	return group.returnObj()
 }
 
 // Match registers a route that matches the specified methods that you declared.
-func (group *RouterGroup) Match(methods []string, relativePath string, handlers ...HandlerFunc) IRoutes {
+func (group *RouterGroup) Match(methods []string, relativePath string, handlerName string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range methods {
-		group.handle(method, relativePath, handlers)
+		group.handle(method, relativePath, handlerName, handlers)
 	}
 
 	return group.returnObj()
@@ -182,8 +182,8 @@ func (group *RouterGroup) staticFileHandler(relativePath string, handler Handler
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static file")
 	}
-	group.GET(relativePath, handler)
-	group.HEAD(relativePath, handler)
+	group.GET(relativePath, "", handler)
+	group.HEAD(relativePath, "", handler)
 	return group.returnObj()
 }
 
@@ -208,8 +208,8 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRou
 	urlPattern := path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
-	group.GET(urlPattern, handler)
-	group.HEAD(urlPattern, handler)
+	group.GET(urlPattern, "", handler)
+	group.HEAD(urlPattern, "", handler)
 	return group.returnObj()
 }
 

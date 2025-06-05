@@ -351,12 +351,12 @@ func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
-func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+func (engine *Engine) addRoute(method, path string, handlers HandlersChain, handlerName string) {
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
-	debugPrintRoute(method, path, handlers)
+	debugPrintRoute(method, path, handlers, handlerName)
 
 	root := engine.trees.get(method)
 	if root == nil {

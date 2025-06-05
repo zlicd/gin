@@ -24,24 +24,20 @@ func IsDebugging() bool {
 // DebugPrintRouteFunc indicates debug log output format.
 var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
 
-// DebugPrintRouteCustomFunc [ZLI] custom debugPrintRoute
-var DebugPrintRouteCustomFunc func(httpMethod, absolutePath string, handlers HandlersChain)
-
 // DebugPrintFunc indicates debug log output format.
 var DebugPrintFunc func(format string, values ...any)
 
-func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
+func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain, handlerName string) {
 	if IsDebugging() {
-		if DebugPrintRouteCustomFunc != nil {
-			DebugPrintRouteCustomFunc(httpMethod, absolutePath, handlers)
+		nuHandlers := len(handlers)
+		name := nameOfFunction(handlers.Last())
+		if handlerName != "" {
+			name = handlerName
+		}
+		if DebugPrintRouteFunc == nil {
+			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, name, nuHandlers)
 		} else {
-			nuHandlers := len(handlers)
-			handlerName := nameOfFunction(handlers.Last())
-			if DebugPrintRouteFunc == nil {
-				debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-			} else {
-				DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
-			}
+			DebugPrintRouteFunc(httpMethod, absolutePath, name, nuHandlers)
 		}
 	}
 }
